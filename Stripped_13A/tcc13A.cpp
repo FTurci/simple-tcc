@@ -1,12 +1,51 @@
 
-#include "global.h"
-#include "supercool.h"
+#include <iostream>
+#include <cstdlib>
+#include <vector>
+#include <fstream>
+#include "clusterinfo.h"
 #include "tcc13A.h"
+#include <string>
 
-tcc13A::tcc13A( int _N ) : tcc_base( _N )
+
+#define RED     "\x1b[31m"
+#define GREEN   "\x1b[32m"
+#define YELLOW  "\x1b[33m"
+#define BLUE    "\x1b[34m"
+#define MAGENTA "\x1b[35m"
+#define CYAN    "\x1b[36m"
+#define RESET   "\x1b[0m"
+
+// Declare a bunch of global variables, extracted from the many sparse headers of the TCC
+int N;                  //number of particles
+int nClu;               // number of clusters
+std::vector<clusterinfo> clusters;
+std::vector<int> sClu;  // N-length array saying if particle i is a member of a cluster
+std::vector<int> sSpe;  // N-length array saying if particle i is a special member of a cluster
+std::vector<int> cnb;   // N-length array storing the number of bonds 
+std::vector<std::vector<int> > bNums; //NxNumBonds table of bonds for every particles
+
+inline bool exists (const std::string& name) {
+    if (FILE *file = fopen(name.c_str(), "r")) {
+        fclose(file);
+        return true;
+    } else {
+        return false;
+    }   
+}
+//check bonds from external file
+bool Bonds_BondCheck(int i, int j)
+{ // Returns 1 if i & j are bonded; 0 otherwise
+  int k;
+
+  for (k=0; k<cnb[i]; ++k) {
+    if (bNums[i][k] == j) return 1;
+  }
+  return 0;
+}
+
+tcc13A::tcc13A( int _N ) 
 {
-  try { fc = g_ctx.props.get<double>( "tcc.fc_13A" ); }
-  catch(...) {}
 
   nsp5c = 0;
   msp5c = 12*N;
@@ -243,6 +282,15 @@ void tcc13A::Clusters_Get13A_Ih()
   }
 }
 
+int sum(std::vector<int> v){
+  int s=0;
+  for (int i = 0; i < v.size(); ++i)
+  {
+    s+=v[i];
+  }
+  return s;
+}
+
 int tcc13A::Find()
 {
   int i;
@@ -259,4 +307,64 @@ int tcc13A::Find()
   }
 
   return total_13A_parts;
+}
+
+
+int main(int argc, char const *argv[])
+{
+  if(argc<3){
+    std::cout<<"!!! Input error:\nPlease input the number of particles and the bond file name.\n";
+    exit(0);
+  }
+
+  if(!exists(argv[2])){
+        std::cout<<"!!! Input error:\nCannot find the bond file.\n";
+    exit(1);
+  }
+  // set the number of particles
+  N=atoi(argv[1]); 
+  bNums.resize(N);
+  // read the bonding information
+  // the bonding file has to contain (one line per particle) :
+  // first:
+  //      the number of bonds
+  // then:
+  //      the ids of the bonded particles
+  // Example: particle 0 has 8 bonds to particles (1,2,3,4,5,6,7,8) so the beginning of the file will be
+  // 8 1 2 3 4 5 6 7 8
+  std::cout<<RESET<<"\nReading the bonding information for "<<CYAN<<N<<RESET<<" particles from input file "<<CYAN<<argv[2]<<RESET<<" ...\n\n";
+  std::ifstream fin(argv[2], std::ios::in);
+  int dummy_nbonds;
+  for (int i = 0; i < N; ++i)
+  { 
+    fin>>dummy_nbonds;
+    cnb.push_back(dummy_nbonds);
+    bNums[i].resize(dummy_nbonds);
+    for (int k = 0; k < dummy_nbonds; ++k)
+    {
+      fin>>bNums[i][k];
+    }
+    
+  }
+  // Find the Icosahedra
+  tcc13A icosahedra(N);
+  icosahedra.Find();
+
+  // output the results
+
+  std::cout<<"The number of icosahedral clusters is "<<RED<<nClu<<RESET<<std::endl;
+  std::cout<<"The number of particles in icosahedra is "<<RED<<sum(sClu)<<RESET<<std::endl; 
+  char bufname[256];
+  sprintf(bufname,"%s.icosahedra",argv[2]);
+  std::cout<<"Writing the cluster file "<<RED<<bufname<<RESET<<" ...\n";
+
+
+  std::ofstream fout(bufname,std::ios::out);
+  for (int i = 0; i < N; ++i)
+  {
+    fout<<sClu[i]<<std::endl;
+  }
+
+  std::cout<<std::endl<<"Done.\n";
+  return 0;
 }

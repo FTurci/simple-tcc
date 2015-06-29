@@ -1,10 +1,10 @@
 
-#ifndef __CLUSTERS_TCC13A_H
-#define __CLUSTERS_TCC13A_H
+#ifndef __CLUSTERS_TCC11W_H
+#define __CLUSTERS_TCC11W_H
 
 #include "tcc_base.h"
 
-class tcc13A : public tcc_base
+class tcc11W : public tcc_base
 {
 private:
   int nsp5c;    // number of pentagonal bipyramid 7A clusters in configuration
@@ -17,10 +17,10 @@ private:
   void Rings_gSP4( int, int, int );
   void Rings_gSP5( int, int, int, int );
   void Rings_aSP5( int, int, int, int, int );
-  void Clusters_Get13A_Ih();
+  void Clusters_Get11W_Cs();
 
 public:
-  tcc13A( int );
+  tcc11W( int );
   virtual int Find();
 };
 

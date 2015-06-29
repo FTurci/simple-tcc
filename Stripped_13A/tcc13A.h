@@ -2,14 +2,15 @@
 #ifndef __CLUSTERS_TCC13A_H
 #define __CLUSTERS_TCC13A_H
 
-#include "tcc_base.h"
+// #include "tcc_base.h"
 
-class tcc13A : public tcc_base
+
+class tcc13A 
 {
 private:
   int nsp5c;    // number of pentagonal bipyramid 7A clusters in configuration
   int msp5c;    // maximum number of 7A
-  std::vector<std::vector<int> > sp5c;
+  std::vector< std::vector<int> > sp5c;
                 // msp5c x 7 array listing the particles within a 7A cluster
 
 private:
